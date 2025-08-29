@@ -110,7 +110,7 @@ public class Startup
 
             #region Administradores
             string GerarTokenJwt(Administrador administrador){
-                if(string.IsNullOrEmpty(key)) return string.Empty;
+                if (string.IsNullOrEmpty(key)) return string.Empty;
 
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -131,9 +131,9 @@ public class Startup
                 return new JwtSecurityTokenHandler().WriteToken(token);
             }
 
-            endpoints.MapPost("/administradores/login", ([FromBody] LoginDTO loginDTO, IAdministradorServico administradorServico) => {
-                var adm = administradorServico.Login(loginDTO);
-                if(adm != null)
+            endpoints.MapPost("/administradores/login", async ([FromBody] LoginDTO loginDTO, IAdministradorServico administradorServico) => {
+                var adm = await administradorServico.LoginAsync(loginDTO);
+                if (adm != null)
                 {
                     string token = GerarTokenJwt(adm);
                     return Results.Ok(new AdministradorLogado
@@ -143,71 +143,87 @@ public class Startup
                         Token = token
                     });
                 }
-                else
-                    return Results.Unauthorized();
-            }).AllowAnonymous().WithTags("Administradores");
+                
+                return Results.Unauthorized();
+            })
+            .AllowAnonymous()
+            .WithTags("Administradores");
 
-            endpoints.MapGet("/administradores", ([FromQuery] int? pagina, IAdministradorServico administradorServico) => {
+            endpoints.MapGet("/administradores", async ([FromQuery] int? pagina, IAdministradorServico administradorServico) => {
                 var adms = new List<AdministradorModelView>();
-                var administradores = administradorServico.Todos(pagina);
+                var administradores = await administradorServico.TodosAsync(pagina);
+
                 foreach(var adm in administradores)
                 {
-                    adms.Add(new AdministradorModelView{
+                    adms.Add(new AdministradorModelView
+                    {
                         Id = adm.Id,
                         Email = adm.Email,
                         Perfil = adm.Perfil
                     });
                 }
+
                 return Results.Ok(adms);
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm" })
             .WithTags("Administradores");
 
-            endpoints.MapGet("/Administradores/{id}", ([FromRoute] int id, IAdministradorServico administradorServico) => {
-                var administrador = administradorServico.BuscaPorId(id);
-                if(administrador == null) return Results.NotFound();
+            endpoints.MapGet("/Administradores/{id}", async ([FromRoute] int id, IAdministradorServico administradorServico) => {
+                var administrador = await administradorServico.BuscaPorIdAsync(id);
+                if (administrador == null)
+                {
+                    return Results.NotFound();
+                }
+                    
                 return Results.Ok(new AdministradorModelView{
                         Id = administrador.Id,
                         Email = administrador.Email,
                         Perfil = administrador.Perfil
                 });
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm" })
             .WithTags("Administradores");
 
-            endpoints.MapPost("/administradores", ([FromBody] AdministradorDTO administradorDTO, IAdministradorServico administradorServico) => {
+            endpoints.MapPost("/administradores", async ([FromBody] AdministradorDTO administradorDTO, IAdministradorServico administradorServico) => {
                 var validacao = new ErrosDeValidacao{
                     Mensagens = new List<string>()
                 };
 
-                if(string.IsNullOrEmpty(administradorDTO.Email))
+                if (string.IsNullOrEmpty(administradorDTO.Email))
+                {
                     validacao.Mensagens.Add("Email não pode ser vazio");
-                if(string.IsNullOrEmpty(administradorDTO.Senha))
+                }
+                if (string.IsNullOrEmpty(administradorDTO.Senha))
+                {
                     validacao.Mensagens.Add("Senha não pode ser vazia");
-                if(administradorDTO.Perfil == null)
+                }
+                if (administradorDTO.Perfil == null)
+                {
                     validacao.Mensagens.Add("Perfil não pode ser vazio");
+                }
 
-                if(validacao.Mensagens.Count > 0)
+                if (validacao.Mensagens.Count > 0)
+                {
                     return Results.BadRequest(validacao);
+                }
                 
-                var administrador = new Administrador{
+                var administrador = new Administrador
+                {
                     Email = administradorDTO.Email,
                     Senha = administradorDTO.Senha,
                     Perfil = administradorDTO.Perfil.ToString() ?? Perfil.Editor.ToString()
                 };
 
-                administradorServico.Incluir(administrador);
+                await administradorServico.IncluirAsync(administrador);
 
-                return Results.Created($"/administrador/{administrador.Id}", new AdministradorModelView{
+                return Results.Created($"/administrador/{administrador.Id}", new AdministradorModelView
+                {
                     Id = administrador.Id,
                     Email = administrador.Email,
                     Perfil = administrador.Perfil
                 });
                 
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm" })
             .WithTags("Administradores");
             #endregion

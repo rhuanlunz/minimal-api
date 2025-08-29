@@ -2,6 +2,7 @@ using MinimalApi.Dominio.Entidades;
 using MinimalApi.DTOs;
 using MinimalApi.Infraestrutura.Db;
 using MinimalApi.Dominio.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MinimalApi.Dominio.Servicos;
 
@@ -13,34 +14,46 @@ public class AdministradorServico : IAdministradorServico
         _contexto = contexto;
     }
 
-    public Administrador? BuscaPorId(int id)
+    public async Task<Administrador?> BuscaPorIdAsync(int id)
     {
-        return _contexto.Administradores.Where(v => v.Id == id).FirstOrDefault();
+        return await _contexto.Administradores
+            .AsNoTracking()
+            .Where(v => v.Id == id)
+            .FirstOrDefaultAsync();
     }
 
-    public Administrador Incluir(Administrador administrador)
+    public async Task<Administrador> IncluirAsync(Administrador administrador)
     {
-        _contexto.Administradores.Add(administrador);
-        _contexto.SaveChanges();
+        await _contexto.Administradores.AddAsync(administrador);
+        await _contexto.SaveChangesAsync();
 
         return administrador;
     }
 
-    public Administrador? Login(LoginDTO loginDTO)
+    public async Task<Administrador?> LoginAsync(LoginDTO loginDTO)
     {
-        var adm = _contexto.Administradores.Where(a => a.Email == loginDTO.Email && a.Senha == loginDTO.Senha).FirstOrDefault();
-        return adm;
+        return await _contexto.Administradores
+            .AsNoTracking()
+            .Where(a => a.Email == loginDTO.Email && a.Senha == loginDTO.Senha)
+            .FirstOrDefaultAsync();
     }
 
-    public List<Administrador> Todos(int? pagina)
+    public async Task<List<Administrador>> TodosAsync(int? pagina)
     {
-        var query = _contexto.Administradores.AsQueryable();
+        var query = _contexto.Administradores
+            .AsNoTracking()
+            .AsQueryable();
 
-        int itensPorPagina = 10;
+        if (pagina != null)
+        {
+            int itensPorPagina = 10;
 
-        if(pagina != null)
-            query = query.Skip(((int)pagina - 1) * itensPorPagina).Take(itensPorPagina);
+            query = query
+                .AsNoTracking()
+                .Skip(((int)pagina - 1) * itensPorPagina)
+                .Take(itensPorPagina);
+        }
 
-        return query.ToList();
+        return await query.ToListAsync();
     }
 }
