@@ -231,9 +231,9 @@ public class Startup
                 return validacao;
             }
 
-            endpoints.MapPost("/veiculos", ([FromBody] VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
+            endpoints.MapPost("/veiculos", async ([FromBody] VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
                 var validacao = validaDTO(veiculoDTO);
-                if(validacao.Mensagens.Count > 0)
+                if (validacao.Mensagens.Count > 0)
                     return Results.BadRequest(validacao);
                 
                 var veiculo = new Veiculo{
@@ -241,31 +241,31 @@ public class Startup
                     Marca = veiculoDTO.Marca,
                     Ano = veiculoDTO.Ano
                 };
-                veiculoServico.Incluir(veiculo);
+                await veiculoServico.IncluirAsync(veiculo);
 
                 return Results.Created($"/veiculo/{veiculo.Id}", veiculo);
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm,Editor" })
             .WithTags("Veiculos");
 
-            endpoints.MapGet("/veiculos", ([FromQuery] int? pagina, IVeiculoServico veiculoServico) => {
-                var veiculos = veiculoServico.Todos(pagina);
+            endpoints.MapGet("/veiculos", async ([FromQuery] int? pagina, IVeiculoServico veiculoServico) => {
+                var veiculos = await veiculoServico.TodosAsync(pagina);
 
                 return Results.Ok(veiculos);
-            }).RequireAuthorization().WithTags("Veiculos");
-
-            endpoints.MapGet("/veiculos/{id}", ([FromRoute] int id, IVeiculoServico veiculoServico) => {
-                var veiculo = veiculoServico.BuscaPorId(id);
-                if(veiculo == null) return Results.NotFound();
-                return Results.Ok(veiculo);
             })
             .RequireAuthorization()
+            .WithTags("Veiculos");
+
+            endpoints.MapGet("/veiculos/{id}", async ([FromRoute] int id, IVeiculoServico veiculoServico) => {
+                var veiculo = await veiculoServico.BuscaPorIdAsync(id);
+
+                return veiculo == null ? Results.NotFound() : Results.Ok(veiculo);
+            })
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm,Editor" })
             .WithTags("Veiculos");
 
-            endpoints.MapPut("/veiculos/{id}", ([FromRoute] int id, VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
-                var veiculo = veiculoServico.BuscaPorId(id);
+            endpoints.MapPut("/veiculos/{id}", async ([FromRoute] int id, VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
+                var veiculo = await veiculoServico.BuscaPorIdAsync(id);
                 if(veiculo == null) return Results.NotFound();
                 
                 var validacao = validaDTO(veiculoDTO);
@@ -276,23 +276,21 @@ public class Startup
                 veiculo.Marca = veiculoDTO.Marca;
                 veiculo.Ano = veiculoDTO.Ano;
 
-                veiculoServico.Atualizar(veiculo);
+                await veiculoServico.AtualizarAsync(veiculo);
 
                 return Results.Ok(veiculo);
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm" })
             .WithTags("Veiculos");
 
-            endpoints.MapDelete("/veiculos/{id}", ([FromRoute] int id, IVeiculoServico veiculoServico) => {
-                var veiculo = veiculoServico.BuscaPorId(id);
+            endpoints.MapDelete("/veiculos/{id}", async ([FromRoute] int id, IVeiculoServico veiculoServico) => {
+                var veiculo = await veiculoServico.BuscaPorIdAsync(id);
                 if(veiculo == null) return Results.NotFound();
 
-                veiculoServico.Apagar(veiculo);
+                await veiculoServico.ApagarAsync(veiculo);
 
                 return Results.NoContent();
             })
-            .RequireAuthorization()
             .RequireAuthorization(new AuthorizeAttribute { Roles = "Adm" })
             .WithTags("Veiculos");
             #endregion
