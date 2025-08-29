@@ -1,4 +1,3 @@
-
 using MinimalApi.Dominio.Entidades;
 
 namespace MinimalApi.Dominio.Interfaces;

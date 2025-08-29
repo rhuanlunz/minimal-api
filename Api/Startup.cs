@@ -110,7 +110,10 @@ public class Startup
 
             #region Administradores
             string GerarTokenJwt(Administrador administrador){
-                if (string.IsNullOrEmpty(key)) return string.Empty;
+                if (string.IsNullOrEmpty(key)) 
+                {
+                    return string.Empty;
+                }
 
                 var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key));
                 var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -231,18 +234,25 @@ public class Startup
             #region Veiculos
             ErrosDeValidacao validaDTO(VeiculoDTO veiculoDTO)
             {
-                var validacao = new ErrosDeValidacao{
+                var validacao = new ErrosDeValidacao
+                {
                     Mensagens = new List<string>()
                 };
 
-                if(string.IsNullOrEmpty(veiculoDTO.Nome))
-                    validacao.Mensagens.Add("O nome não pode ser vazio");
+                if (string.IsNullOrEmpty(veiculoDTO.Nome))
+                { 
+                    validacao.Mensagens.Add("O nome não pode ser vazio"); 
+                }
 
-                if(string.IsNullOrEmpty(veiculoDTO.Marca))
-                    validacao.Mensagens.Add("A Marca não pode ficar em branco");
+                if (string.IsNullOrEmpty(veiculoDTO.Marca))
+                { 
+                    validacao.Mensagens.Add("A Marca não pode ficar em branco"); 
+                }
 
-                if(veiculoDTO.Ano < 1950)
-                    validacao.Mensagens.Add("Veículo muito antigo, aceito somete anos superiores a 1950");
+                if (veiculoDTO.Ano < 1950)
+                {
+                    validacao.Mensagens.Add("Veículo muito antigo, aceito somete anos superiores a 1950"); validacao.Mensagens.Add("Veículo muito antigo, aceito somete anos superiores a 1950");
+                }
 
                 return validacao;
             }
@@ -250,7 +260,9 @@ public class Startup
             endpoints.MapPost("/veiculos", async ([FromBody] VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
                 var validacao = validaDTO(veiculoDTO);
                 if (validacao.Mensagens.Count > 0)
+                {
                     return Results.BadRequest(validacao);
+                }
                 
                 var veiculo = new Veiculo{
                     Nome = veiculoDTO.Nome,
@@ -282,11 +294,16 @@ public class Startup
 
             endpoints.MapPut("/veiculos/{id}", async ([FromRoute] int id, VeiculoDTO veiculoDTO, IVeiculoServico veiculoServico) => {
                 var veiculo = await veiculoServico.BuscaPorIdAsync(id);
-                if(veiculo == null) return Results.NotFound();
+                if (veiculo == null)
+                {
+                    return Results.NotFound();
+                }
                 
                 var validacao = validaDTO(veiculoDTO);
-                if(validacao.Mensagens.Count > 0)
+                if (validacao.Mensagens.Count > 0)
+                {
                     return Results.BadRequest(validacao);
+                }
                 
                 veiculo.Nome = veiculoDTO.Nome;
                 veiculo.Marca = veiculoDTO.Marca;
@@ -301,7 +318,10 @@ public class Startup
 
             endpoints.MapDelete("/veiculos/{id}", async ([FromRoute] int id, IVeiculoServico veiculoServico) => {
                 var veiculo = await veiculoServico.BuscaPorIdAsync(id);
-                if(veiculo == null) return Results.NotFound();
+                if (veiculo == null) 
+                { 
+                    return Results.NotFound();
+                }
 
                 await veiculoServico.ApagarAsync(veiculo);
 

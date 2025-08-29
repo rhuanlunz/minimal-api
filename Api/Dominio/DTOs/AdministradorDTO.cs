@@ -1,5 +1,4 @@
-
-using MinimalApi.Dominio.Enuns;
+using MinimalApi.Dominio.Enums;
 
 namespace MinimalApi.DTOs;
 public class AdministradorDTO
